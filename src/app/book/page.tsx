@@ -1,46 +1,41 @@
-"use client";
-import { useState } from "react";
+'use client'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+
+const PORTS = [
+"Nassau, Bahamas","Freeport, Bahamas","Kingston, Jamaica","Montego Bay, Jamaica","Port-au-Prince, Haiti","Santo Domingo, Dominican Republic","San Juan, Puerto Rico","St Thomas, USVI","St Croix, USVI","Road Town, Tortola BVI","St John's, Antigua","Bridgetown, Barbados","Port of Spain, Trinidad & Tobago","St George's, Grenada","Castries, St Lucia","Kingstown, St Vincent","Roseau, Dominica","Basseterre, St Kitts & Nevis","Providenciales, Turks & Caicos","Oranjestad, Aruba"
+]
+
 export default function Book(){
-const [type,setType]=useState("RoRo");
-const [vehicle,setVehicle]=useState("Sedan");
-const [name,setName]=useState("");
-const [email,setEmail]=useState("");
-const [origin,setOrigin]=useState("Miami, FL");
-const [dest,setDest]=useState("Bahamas");
-const base = type==="RoRo"? 2997 : 3747;
-const extra = vehicle==="SUV"?400:vehicle==="Truck"?800:vehicle==="Container 20ft"?0:vehicle==="Container 40ft"?1200:0;
-const total = base + extra;
-function submit(e:any){
-e.preventDefault();
-const code="TSC-"+Math.floor(100000+Math.random()*900000);
-const data={code,name,email,type,vehicle,origin,dest,amount:total,status:0,paid:false,date:new Date().toISOString()};
-const all=JSON.parse(localStorage.getItem("shipments")||"[]"); all.push(data); localStorage.setItem("shipments",JSON.stringify(all)); localStorage.setItem("lastCode",code);
-window.location.href="/payment?code="+code;
+  const router = useRouter()
+  const [dest, setDest] = useState(PORTS[0])
+  return (
+    <div className="min-h-screen bg-[#0a1931] p-6">
+      <div className="max-w-xl mx-auto bg-white rounded-2xl p-8 text-black">
+        <h1 className="text-2xl font-black">Book RoRo or Containerized</h1>
+        <p className="text-xs opacity-60 mt-2">Complete booking to get live estimate and tracking ID</p>
+        
+        <label className="block mt-6 text-xs font-bold">Destination - Caribbean Port</label>
+        <select value={dest} onChange={e=>setDest(e.target.value)} className="w-full mt-2 p-3 border rounded-lg bg-white">
+          {PORTS.map(p=> <option key={p}>{p}</option>)}
+        </select>
+
+        <div className="grid grid-cols-2 gap-3 mt-4">
+          <input placeholder="Full Name" className="p-3 border rounded-lg" />
+          <input placeholder="Phone" className="p-3 border rounded-lg" />
+        </div>
+        <input placeholder="Email" className="w-full p-3 border rounded-lg mt-3" />
+        <div className="grid grid-cols-2 gap-3 mt-3">
+          <select className="p-3 border rounded-lg"><option>RoRo - $2747</option><option>Container 20ft - $4200</option><option>Container 40ft - $6200</option></select>
+          <select className="p-3 border rounded-lg"><option>Vehicle</option><option>Personal Effects</option><option>Commercial</option></select>
+        </div>
+
+        <div className="mt-6 bg-[#0a1931] text-white p-4 rounded-xl flex justify-between">
+          <span>Live Total</span><span className="font-black">$2,747 EST</span>
+        </div>
+
+        <button onClick={()=>router.push('/payment')} className="w-full mt-4 bg-[#ffcc00] py-3 font-black rounded-lg">Continue to Payment & Get Tracking ID</button>
+      </div>
+    </div>
+  )
 }
-return(<div>
-<header style={{background:"#0A1931",padding:15,color:"white"}}><a href="/" style={{color:"#C9A86A"}}>← Home</a> <span style={{marginLeft:20,fontWeight:"bold"}}>Book Shipment - RoRo / Containerized</span></header>
-<div style={{maxWidth:600,margin:"20px auto",padding:20,border:"1px solid #ddd"}}>
-<h2>Book RoRo or Containerized</h2>
-<p>Contact ONLY: tropicalshipping286@gmail.com</p>
-<form onSubmit={submit}>
-<label>Full Name (will show in Admin)</label><br/><input required value={name} onChange={e=>setName(e.target.value)} style={{width:"100%",padding:10,marginBottom:10}} placeholder="John Doe"/><br/>
-<label>Email (Gmail)</label><br/><input required type="email" value={email} onChange={e=>setEmail(e.target.value)} style={{width:"100%",padding:10,marginBottom:10}} placeholder="you@gmail.com"/><br/>
-<label>Shipping Type</label><br/>
-<div style={{display:"flex",gap:10,marginBottom:10}}>
-<button type="button" onClick={()=>setType("RoRo")} style={{flex:1,padding:12,background:type==="RoRo"?"#0A1931":"#eee",color:type==="RoRo"?"white":"black",border:"none",fontWeight:"bold"}}>RoRo - $2997 base</button>
-<button type="button" onClick={()=>setType("Containerized")} style={{flex:1,padding:12,background:type==="Containerized"?"#0A1931":"#eee",color:type==="Containerized"?"white":"black",border:"none",fontWeight:"bold"}}>Containerized - $3747 base</button>
-</div>
-<label>Vehicle / Container</label><br/>
-<select value={vehicle} onChange={e=>setVehicle(e.target.value)} style={{width:"100%",padding:10,marginBottom:10}}>
-<option>Sedan</option><option>SUV (+$400)</option><option>Truck (+$800)</option><option>Container 20ft</option><option>Container 40ft (+$1200)</option>
-</select><br/>
-<label>Origin</label><br/><input value={origin} onChange={e=>setOrigin(e.target.value)} style={{width:"100%",padding:10,marginBottom:10}}/><br/>
-<label>Destination</label><br/>
-<select value={dest} onChange={e=>setDest(e.target.value)} style={{width:"100%",padding:10,marginBottom:10}}>
-<option>Bahamas</option><option>Jamaica</option><option>Barbados</option><option>Trinidad</option><option>Guyana</option><option>Antigua</option>
-</select><br/>
-<div style={{background:"#0A1931",color:"white",padding:15,margin:"15px 0"}}><div>LIVE Price: {type} + {vehicle}</div><div style={{fontSize:28,fontWeight:"bold",color:"#C9A86A"}}>${total.toLocaleString()}</div></div>
-<button type="submit" style={{width:"100%",padding:14,background:"#C9A86A",border:"none",fontWeight:"bold",fontSize:16}}>Continue to Payment - Get TSC Tag</button>
-</form>
-</div>
-</div>)}
