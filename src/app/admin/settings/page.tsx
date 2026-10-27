@@ -1,81 +1,85 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 export default function SettingsPage() {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
   const [settings, setSettings] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [msg, setMsg] = useState('Loading...')
 
   useEffect(() => {
+    const load = async () => {
+      const { data, error } = await supabase
+        .from('payment_settings')
+        .select('*')
+        .order('id')
+
+      if (error) {
+        setMsg('ERROR: ' + error.message)
+        console.error(error)
+        return
+      }
+      if (!data || data.length === 0) {
+        setMsg('No rows found in payment_settings. Table is empty in THIS project.')
+        setSettings([])
+      } else {
+        setMsg('')
+        setSettings(data)
+      }
+    }
     load()
   }, [])
 
-  async function load() {
-    const { data } = await supabase.from('payment_settings').select('*').order('id')
-    setSettings(data || [])
-    setLoading(false)
+  const updateField = (id: string, field: string, value: string) => {
+    setSettings(prev => prev.map(s => 
+      s.id === id ? { ...s, details: { ...s.details, [field]: value } } : s
+    ))
   }
 
-  async function save() {
+  const save = async () => {
     for (const s of settings) {
-      await supabase.from('payment_settings').update({ details: s.details, label: s.label, is_active: s.is_active }).eq('id', s.id)
+      const { error } = await supabase.from('payment_settings').update({
+        details: s.details,
+      }).eq('id', s.id)
+      if (error) alert(error.message)
     }
-    alert('✅ Payment details saved!')
+    alert('✅ Saved!')
   }
-
-  function updateDetails(id: string, key: string, value: string) {
-    setSettings(prev => prev.map(s => s.id === id ? { ...s, details: { ...s.details, [key]: value } } : s))
-  }
-
-  if (loading) return <div className="p-8">Loading...</div>
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">⚙️ PAYMENT SETTINGS</h1>
-      <p className="mb-6 text-gray-400">Edit your account details - customers will see these at checkout. No hard-coding.</p>
-
+    <div className="p-8 max-w-4xl mx-auto bg-black min-h-screen text-white">
+      <h1 className="text-3xl font-bold mb-2">⚙️ PAYMENT SETTINGS</h1>
+      {msg && <div className="border border-yellow-600 p-4 rounded bg-yellow-900/20 mb-6">{msg}</div>}
+      
       <div className="grid gap-6">
         {settings.map((s) => (
-          <div key={s.id} className="border rounded-lg p-4 bg-gray-900">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-bold text-green-400 uppercase">{s.label} ({s.id})</h3>
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={s.is_active} onChange={e => setSettings(prev => prev.map(x => x.id === s.id ? {...x, is_active: e.target.checked} : x))} />
-                Active
-              </label>
+          <div key={s.id} className="border border-gray-700 rounded-lg p-5 bg-gray-900">
+            <h3 className="font-bold text-green-400 uppercase text-lg mb-4">{s.id} - {s.label}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {Object.keys(s.details || {}).map((key) => (
+                <div key={key} className="flex flex-col">
+                  <label className="text-xs text-gray-400 uppercase mb-1">{key}</label>
+                  <input
+                    className="bg-black p-3 rounded border border-gray-700 focus:border-green-500 outline-none"
+                    value={s.details[key] || ''}
+                    onChange={(e) => updateField(s.id, key, e.target.value)}
+                  />
+                </div>
+              ))}
             </div>
-
-            {s.id === 'bank' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <input className="bg-black p-2 rounded border" placeholder="Bank Name" value={s.details.bank_name || ''} onChange={e => updateDetails(s.id, 'bank_name', e.target.value)} />
-                <input className="bg-black p-2 rounded border" placeholder="Account Number" value={s.details.account_number || ''} onChange={e => updateDetails(s.id, 'account_number', e.target.value)} />
-                <input className="bg-black p-2 rounded border" placeholder="Account Name" value={s.details.account_name || ''} onChange={e => updateDetails(s.id, 'account_name', e.target.value)} />
-              </div>
-            )}
-            {s.id === 'zelle' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <input className="bg-black p-2 rounded border" placeholder="Zelle Email" value={s.details.email || ''} onChange={e => updateDetails(s.id, 'email', e.target.value)} />
-                <input className="bg-black p-2 rounded border" placeholder="Zelle Phone" value={s.details.phone || ''} onChange={e => updateDetails(s.id, 'phone', e.target.value)} />
-                <input className="bg-black p-2 rounded border" placeholder="Name" value={s.details.name || ''} onChange={e => updateDetails(s.id, 'name', e.target.value)} />
-              </div>
-            )}
-            {s.id === 'cashapp' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <input className="bg-black p-2 rounded border" placeholder="$Cashtag" value={s.details.cashtag || ''} onChange={e => updateDetails(s.id, 'cashtag', e.target.value)} />
-                <input className="bg-black p-2 rounded border" placeholder="Name" value={s.details.name || ''} onChange={e => updateDetails(s.id, 'name', e.target.value)} />
-              </div>
-            )}
-            {s.id === 'chime' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <input className="bg-black p-2 rounded border" placeholder="$ChimeSign" value={s.details.chime_sign || ''} onChange={e => updateDetails(s.id, 'chime_sign', e.target.value)} />
-                <input className="bg-black p-2 rounded border" placeholder="Name" value={s.details.name || ''} onChange={e => updateDetails(s.id, 'name', e.target.value)} />
-              </div>
-            )}
           </div>
         ))}
       </div>
 
-      <button onClick={save} className="mt-6 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded font-bold w-full">Save All Payment Details</button>
+      {settings.length > 0 && (
+        <button onClick={save} className="mt-8 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded font-bold w-full text-lg">
+          💾 Save All
+        </button>
+      )}
     </div>
   )
 }
