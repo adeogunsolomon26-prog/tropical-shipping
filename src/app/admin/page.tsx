@@ -1,66 +1,112 @@
-"use client";
-import { useEffect, useState } from "react";
-export default function Admin(){
-const [auth,setAuth]=useState(false); const [pass,setPass]=useState(""); const [shipments,setShipments]=useState<any[]>([]); const [search,setSearch]=useState("");
-useEffect(()=>{ if(auth) load(); },[auth]);
-function load(){ const all=JSON.parse(localStorage.getItem("shipments")||"[]"); setShipments(all.reverse()); }
-function login(){ if(pass==="admin123"){setAuth(true);} else alert("Password is admin123"); }
-function updateStatus(code:string,newStatus:number){
-let all=JSON.parse(localStorage.getItem("shipments")||"[]");
-const i=all.findIndex((s:any)=>s.code===code); if(i>=0){all[i].status=newStatus; localStorage.setItem("shipments",JSON.stringify(all)); load();}
+'use client';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+
+export default function AdminPage() {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newTracking, setNewTracking] = useState('');
+  const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+
+  const statuses = ['pending', 'processing', 'in_transit', 'out_for_delivery', 'delivered'];
+
+  async function loadOrders() {
+    setLoading(true);
+    const { data } = await supabase.from('orders').select('*').order('created_at', {ascending: false});
+    setOrders(data || []);
+    setLoading(false);
+  }
+
+  useEffect(() => { loadOrders(); }, []);
+
+  async function createOrder() {
+    if (!newTracking) return alert('Enter tracking ID');
+    const tracking = newTracking.toUpperCase().startsWith('TRP-') ? newTracking.toUpperCase() : `TRP-${newTracking.toUpperCase()}`;
+    
+    const { error } = await supabase.from('orders').insert({
+      tracking_id: tracking,
+      status: 'pending',
+      customer_name: newName || 'Customer',
+      customer_email: newEmail || 'customer@email.com',
+      customer_phone: newPhone || '000-000-0000'
+    });
+    
+    if (error) alert('Error: ' + error.message);
+    else {
+      alert(`Created: ${tracking}`);
+      setNewTracking(''); setNewName(''); setNewEmail(''); setNewPhone('');
+      loadOrders();
+    }
+  }
+
+  async function updateStatus(id: string, newStatus: string) {
+    await supabase.from('orders').update({ status: newStatus }).eq('id', id);
+    loadOrders();
+  }
+
+  async function deleteOrder(id: string) {
+    if (!confirm('Delete this order?')) return;
+    await supabase.from('orders').delete().eq('id', id);
+    loadOrders();
+  }
+
+  return (
+    <div style={{minHeight:'100vh', background:'#F9FAFB', padding:20, fontFamily:'sans-serif'}}>
+      <div style={{maxWidth:1000, margin:'0 auto'}}>
+        <h1 style={{fontSize:28, fontWeight:900}}>🔧 TROPICAL ADMIN</h1>
+        <p style={{color:'#6B7280'}}>Manage all shipments</p>
+
+        {/* CREATE */}
+        <div style={{background:'white', padding:20, borderRadius:16, marginTop:20, boxShadow:'0 4px 12px rgba(0,0,0,0.05)', border:'1px solid #E5E7EB'}}>
+          <h3 style={{margin:'0 0 12px', fontWeight:800}}>➕ Create New Tracking</h3>
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
+            <input placeholder="Tracking ID: e.g. 12346 or TRP-12346" value={newTracking} onChange={e=>setNewTracking(e.target.value)} style={inputStyle} />
+            <input placeholder="Customer Name" value={newName} onChange={e=>setNewName(e.target.value)} style={inputStyle} />
+            <input placeholder="Email" value={newEmail} onChange={e=>setNewEmail(e.target.value)} style={inputStyle} />
+            <input placeholder="Phone" value={newPhone} onChange={e=>setNewPhone(e.target.value)} style={inputStyle} />
+          </div>
+          <button onClick={createOrder} style={{marginTop:12, background:'#10B981', color:'white', border:'none', padding:'10px 20px', borderRadius:10, fontWeight:'bold', cursor:'pointer', width:'100%'}}>
+            CREATE ORDER
+          </button>
+        </div>
+
+        {/* LIST */}
+        <div style={{background:'white', padding:20, borderRadius:16, marginTop:20, boxShadow:'0 4px 12px rgba(0,0,0,0.05)', border:'1px solid #E5E7EB'}}>
+          <h3 style={{margin:'0 0 12px', fontWeight:800}}>📦 All Orders ({orders.length})</h3>
+          {loading ? <p>Loading...</p> : orders.map(order => (
+            <div key={order.id} style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'12px 0', borderBottom:'1px solid #F3F4F6', flexWrap:'wrap', gap:10}}>
+              <div style={{flex:1, minWidth:200}}>
+                <div style={{fontWeight:'800'}}>{order.tracking_id} <span style={{fontSize:11, background:'#EFF6FF', color:'#1D4ED8', padding:'2px 8px', borderRadius:10}}>{order.status}</span></div>
+                <div style={{fontSize:12, color:'#6B7280'}}>{order.customer_name} • {order.customer_email}</div>
+                <a href={`/track?tracking=${order.tracking_id}`} target="_blank" style={{fontSize:11, color:'#10B981'}}>View Track Page →</a>
+              </div>
+              <div style={{display:'flex', gap:6, flexWrap:'wrap'}}>
+                {statuses.map(s => (
+                  <button key={s} onClick={()=>updateStatus(order.id, s)} 
+                    style={{
+                      padding:'5px 8px', fontSize:10, borderRadius:8, border:'1px solid #E5E7EB',
+                      background: order.status===s ? '#10B981' : 'white',
+                      color: order.status===s ? 'white' : '#374151',
+                      cursor:'pointer', fontWeight:'bold', textTransform:'uppercase'
+                    }}>{s.replace('_',' ')}</button>
+                ))}
+                <button onClick={()=>deleteOrder(order.id)} style={{padding:'5px 8px', fontSize:10, borderRadius:8, border:'1px solid #FCA5A5', background:'#FEF2F2', color:'#DC2626', cursor:'pointer'}}>X</button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{marginTop:20, textAlign:'center'}}>
+          <button onClick={loadOrders} style={{padding:'8px 16px', borderRadius:8, border:'1px solid #E5E7EB', background:'white', cursor:'pointer'}}>🔄 Refresh</button>
+        </div>
+
+      </div>
+    </div>
+  );
 }
-function togglePaid(code:string){
-let all=JSON.parse(localStorage.getItem("shipments")||"[]");
-const i=all.findIndex((s:any)=>s.code===code); if(i>=0){all[i].paid=!all[i].paid; localStorage.setItem("shipments",JSON.stringify(all)); load();}
-}
-function del(code:string){
-if(!confirm("Delete "+code+"?")) return;
-let all=JSON.parse(localStorage.getItem("shipments")||"[]").filter((s:any)=>s.code!==code);
-localStorage.setItem("shipments",JSON.stringify(all)); load();
-}
-const filtered=shipments.filter(s=> s.code.toLowerCase().includes(search.toLowerCase()) || s.name.toLowerCase().includes(search.toLowerCase()) || s.email.toLowerCase().includes(search.toLowerCase()));
-if(!auth) return(<div style={{maxWidth:400,margin:"100px auto",padding:20,border:"1px solid #ddd"}}>
-<h2>Admin Login</h2>
-<p>Separate Admin - Tropical Shipping</p>
-<input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="Enter password: admin123" style={{width:"100%",padding:10,marginBottom:10}}/>
-<button onClick={login} style={{width:"100%",padding:12,background:"#0A1931",color:"white",border:"none"}}>Login</button>
-<p style={{fontSize:12,marginTop:10}}>Password: admin123 (change later)</p>
-</div>);
-return(<div>
-<header style={{background:"#0A1931",padding:15,color:"white",display:"flex",justifyContent:"space-between"}}>
-<span>Admin - Name + RoRo/Container + 0-100% LIVE Control</span><a href="/" style={{color:"#C9A86A"}}>View Site</a>
-</header>
-<div style={{padding:20}}>
-<input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by TAG, Name, Email..." style={{width:"100%",maxWidth:400,padding:10,marginBottom:20}}/>
-<p>Total Bookings: {filtered.length} | Gmail ONLY: tropicalshipping286@gmail.com</p>
-<div style={{overflowX:"auto"}}>
-<table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-<thead><tr style={{background:"#0A1931",color:"white"}}><th style={{padding:8}}>TAG / Name</th><th style={{padding:8}}>RoRo / Container</th><th style={{padding:8}}>Amount / Paid</th><th style={{padding:8}}>0% to 100% Control</th><th style={{padding:8}}>Action</th></tr></thead>
-<tbody>
-{filtered.map(s=>(
-<tr key={s.code} style={{borderBottom:"1px solid #ddd",background:s.paid?"#E8F5E9":"#FFF"}}>
-<td style={{padding:8}}><b>{s.code}</b><br/>{s.name}<br/><span style={{color:"gray"}}>{s.email}</span><br/>{s.origin}→{s.dest}</td>
-<td style={{padding:8}}><b style={{color:s.type==="RoRo"?"#0A1931":"#C9A86A"}}>{s.type}</b><br/>{s.vehicle}</td>
-<td style={{padding:8}}>${s.amount}<br/><span style={{background:s.paid?"green":"orange",color:"white",padding:"2px 6px"}}>{s.paid?"PAID - Name Saved":"UNPAID"}</span></td>
-<td style={{padding:8}}>
-<div style={{display:"flex",alignItems:"center",gap:5}}>
-<input type="range" min="0" max="100" step="20" value={s.status||0} onChange={e=>updateStatus(s.code,parseInt(e.target.value))} style={{width:80}}/>
-<b>{s.status||0}%</b>
-</div>
-<div style={{background:"#eee",height:8,marginTop:5}}><div style={{width:`${s.status||0}%`,height:"100%",background:"#0A1931"}}></div></div>
-<select value={s.status||0} onChange={e=>updateStatus(s.code,parseInt(e.target.value))} style={{marginTop:5,padding:4}}>
-<option value={0}>0% Booking Received</option><option value={20}>20% Payment Confirmed</option><option value={40}>40% Vehicle Received</option><option value={60}>60% Loaded</option><option value={80}>80% In Transit</option><option value={100}>100% Arrived</option>
-</select>
-</td>
-<td style={{padding:8}}>
-<button onClick={()=>togglePaid(s.code)} style={{padding:4,marginBottom:4,width:"100%"}}>{s.paid?"Mark Unpaid":"Mark Paid"}</button><br/>
-<button onClick={()=>window.open(`/track?code=${s.code}`,'_blank')} style={{padding:4,marginBottom:4,width:"100%"}}>View Track</button><br/>
-<button onClick={()=>del(s.code)} style={{padding:4,background:"red",color:"white",border:"none",width:"100%"}}>Delete</button>
-</td>
-</tr>
-))}
-</tbody>
-</table>
-</div>
-</div>
-</div>)}
+
+const inputStyle = {
+  padding:'10px 12px', borderRadius:10, border:'1px solid #E5E7EB', fontSize:14, outline:'none'
+} as const;
