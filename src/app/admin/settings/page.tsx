@@ -1,85 +1,86 @@
-'use client'
-import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+"use client"
+
+import { useState, useEffect } from "react"
+import { supabase } from "@/lib/supabase"
 
 export default function SettingsPage() {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
-  const [settings, setSettings] = useState<any[]>([])
-  const [msg, setMsg] = useState('Loading...')
+  const [settings, setSettings] = useState({
+    bank_name: "GTBank",
+    account_name: "TROPICAL SHIPPING LTD",
+    account_number: "",
+    cashapp: "$TropicalShip",
+    chime: "$Tropical-Chime",
+    zelle_email: "payments@tropical.com",
+    zelle_phone: "+1 234 567 8900"
+  })
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    const load = async () => {
-      const { data, error } = await supabase
-        .from('payment_settings')
-        .select('*')
-        .order('id')
-
-      if (error) {
-        setMsg('ERROR: ' + error.message)
-        console.error(error)
-        return
-      }
-      if (!data || data.length === 0) {
-        setMsg('No rows found in payment_settings. Table is empty in THIS project.')
-        setSettings([])
-      } else {
-        setMsg('')
-        setSettings(data)
-      }
-    }
-    load()
+    fetchSettings()
   }, [])
 
-  const updateField = (id: string, field: string, value: string) => {
-    setSettings(prev => prev.map(s => 
-      s.id === id ? { ...s, details: { ...s.details, [field]: value } } : s
-    ))
+  async function fetchSettings() {
+    const { data } = await supabase.from('payment_settings').select('*').single()
+    if (data) setSettings(data)
   }
 
-  const save = async () => {
-    for (const s of settings) {
-      const { error } = await supabase.from('payment_settings').update({
-        details: s.details,
-      }).eq('id', s.id)
-      if (error) alert(error.message)
-    }
-    alert('✅ Saved!')
+  async function saveSettings() {
+    setLoading(true)
+    const { error } = await supabase.from('payment_settings').upsert(settings)
+    setLoading(false)
+    if (!error) alert("Saved!")
+    else alert(error.message)
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto bg-black min-h-screen text-white">
-      <h1 className="text-3xl font-bold mb-2">⚙️ PAYMENT SETTINGS</h1>
-      {msg && <div className="border border-yellow-600 p-4 rounded bg-yellow-900/20 mb-6">{msg}</div>}
+    <div className="min-h-screen bg-black text-white p-8">
+      <h1 className="text-3xl font-bold mb-8 text-yellow-500">Payment Settings</h1>
       
-      <div className="grid gap-6">
-        {settings.map((s) => (
-          <div key={s.id} className="border border-gray-700 rounded-lg p-5 bg-gray-900">
-            <h3 className="font-bold text-green-400 uppercase text-lg mb-4">{s.id} - {s.label}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.keys(s.details || {}).map((key) => (
-                <div key={key} className="flex flex-col">
-                  <label className="text-xs text-gray-400 uppercase mb-1">{key}</label>
-                  <input
-                    className="bg-black p-3 rounded border border-gray-700 focus:border-green-500 outline-none"
-                    value={s.details[key] || ''}
-                    onChange={(e) => updateField(s.id, key, e.target.value)}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+      <div className="max-w-2xl space-y-6 bg-zinc-900 p-6 rounded-xl">
+        <div>
+          <label className="block mb-2">Bank Name</label>
+          <input className="w-full p-3 bg-black border border-zinc-700 rounded" 
+            value={settings.bank_name} 
+            onChange={e => setSettings({...settings, bank_name: e.target.value})} />
+        </div>
+        <div>
+          <label className="block mb-2">Account Name</label>
+          <input className="w-full p-3 bg-black border border-zinc-700 rounded" 
+            value={settings.account_name} 
+            onChange={e => setSettings({...settings, account_name: e.target.value})} />
+        </div>
+        <div>
+          <label className="block mb-2">CashApp</label>
+          <input className="w-full p-3 bg-black border border-zinc-700 rounded" 
+            value={settings.cashapp} 
+            onChange={e => setSettings({...settings, cashapp: e.target.value})} />
+        </div>
+        <div>
+          <label className="block mb-2">Chime</label>
+          <input className="w-full p-3 bg-black border border-zinc-700 rounded" 
+            value={settings.chime} 
+            onChange={e => setSettings({...settings, chime: e.target.value})} />
+        </div>
+        <div>
+          <label className="block mb-2">Zelle Email</label>
+          <input className="w-full p-3 bg-black border border-zinc-700 rounded" 
+            value={settings.zelle_email} 
+            onChange={e => setSettings({...settings, zelle_email: e.target.value})} />
+        </div>
+        <div>
+          <label className="block mb-2">Zelle Phone</label>
+          <input className="w-full p-3 bg-black border border-zinc-700 rounded" 
+            value={settings.zelle_phone} 
+            onChange={e => setSettings({...settings, zelle_phone: e.target.value})} />
+        </div>
 
-      {settings.length > 0 && (
-        <button onClick={save} className="mt-8 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded font-bold w-full text-lg">
-          💾 Save All
+        <button 
+          onClick={saveSettings} 
+          disabled={loading}
+          className="w-full bg-yellow-500 text-black font-bold py-3 rounded hover:bg-yellow-400">
+          {loading ? "Saving..." : "Save All"}
         </button>
-      )}
+      </div>
     </div>
   )
 }
