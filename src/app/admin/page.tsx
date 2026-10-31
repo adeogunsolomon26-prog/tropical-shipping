@@ -1,112 +1,87 @@
-'use client';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+"use client";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import Shell from "@/components/Shell";
+import { PaymentBadge } from "@/components/Badges";
+import { useRequireAuth } from "@/lib/useAuth";
+import { authFetch } from "@/lib/api";
+import { card } from "@/lib/ui";
+import type { Booking } from "@/lib/types";
 
 export default function AdminPage() {
-  const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [newTracking, setNewTracking] = useState('');
-  const [newName, setNewName] = useState('');
-  const [newEmail, setNewEmail] = useState('');
-  const [newPhone, setNewPhone] = useState('');
+  const { loading } = useRequireAuth();
+  const [rows, setRows] = useState<Booking[]>([]);
+  const [state, setState] = useState<"loading" | "ok" | "denied">("loading");
+  const [filter, setFilter] = useState("all");
 
-  const statuses = ['pending', 'processing', 'in_transit', 'out_for_delivery', 'delivered'];
-
-  async function loadOrders() {
-    setLoading(true);
-    const { data } = await supabase.from('orders').select('*').order('created_at', {ascending: false});
-    setOrders(data || []);
-    setLoading(false);
-  }
-
-  useEffect(() => { loadOrders(); }, []);
-
-  async function createOrder() {
-    if (!newTracking) return alert('Enter tracking ID');
-    const tracking = newTracking.toUpperCase().startsWith('TRP-') ? newTracking.toUpperCase() : `TRP-${newTracking.toUpperCase()}`;
-    
-    const { error } = await supabase.from('orders').insert({
-      tracking_id: tracking,
-      status: 'pending',
-      customer_name: newName || 'Customer',
-      customer_email: newEmail || 'customer@email.com',
-      customer_phone: newPhone || '000-000-0000'
+  useEffect(() => {
+    if (loading) return;
+    authFetch("/api/admin/bookings").then(async (r) => {
+      if (r.status === 401 || r.status === 403) return setState("denied");
+      if (r.ok) {
+        setRows(await r.json());
+        setState("ok");
+      }
     });
-    
-    if (error) alert('Error: ' + error.message);
-    else {
-      alert(`Created: ${tracking}`);
-      setNewTracking(''); setNewName(''); setNewEmail(''); setNewPhone('');
-      loadOrders();
-    }
-  }
+  }, [loading]);
 
-  async function updateStatus(id: string, newStatus: string) {
-    await supabase.from('orders').update({ status: newStatus }).eq('id', id);
-    loadOrders();
+  if (state === "denied") {
+    return <Shell><p className="p-10 text-center text-red-600">You do not have access to this page.</p></Shell>;
   }
+  if (state === "loading") return <Shell><p className="p-10 text-center text-slate-500">Loading…</p></Shell>;
 
-  async function deleteOrder(id: string) {
-    if (!confirm('Delete this order?')) return;
-    await supabase.from('orders').delete().eq('id', id);
-    loadOrders();
-  }
+  const count = (s: string) => rows.filter((r) => r.payment_status === s).length;
+  const shown = rows
+    .filter((r) => filter === "all" || r.payment_status === filter)
+    .sort((a, b) => Number(b.payment_status === "awaiting_verification") - Number(a.payment_status === "awaiting_verification"));
+
+  const stats = [
+    { k: "all", label: "All bookings", v: rows.length },
+    { k: "awaiting_verification", label: "Needs review", v: count("awaiting_verification") },
+    { k: "paid", label: "Paid", v: count("paid") },
+    { k: "unpaid", label: "Unpaid", v: count("unpaid") },
+  ];
 
   return (
-    <div style={{minHeight:'100vh', background:'#F9FAFB', padding:20, fontFamily:'sans-serif'}}>
-      <div style={{maxWidth:1000, margin:'0 auto'}}>
-        <h1 style={{fontSize:28, fontWeight:900}}>🔧 TROPICAL ADMIN</h1>
-        <p style={{color:'#6B7280'}}>Manage all shipments</p>
+    <Shell>
+      <div className="mx-auto max-w-4xl px-4 py-10">
+        <h1 className="text-3xl font-bold text-[#0a2540]">Admin dashboard</h1>
 
-        {/* CREATE */}
-        <div style={{background:'white', padding:20, borderRadius:16, marginTop:20, boxShadow:'0 4px 12px rgba(0,0,0,0.05)', border:'1px solid #E5E7EB'}}>
-          <h3 style={{margin:'0 0 12px', fontWeight:800}}>➕ Create New Tracking</h3>
-          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
-            <input placeholder="Tracking ID: e.g. 12346 or TRP-12346" value={newTracking} onChange={e=>setNewTracking(e.target.value)} style={inputStyle} />
-            <input placeholder="Customer Name" value={newName} onChange={e=>setNewName(e.target.value)} style={inputStyle} />
-            <input placeholder="Email" value={newEmail} onChange={e=>setNewEmail(e.target.value)} style={inputStyle} />
-            <input placeholder="Phone" value={newPhone} onChange={e=>setNewPhone(e.target.value)} style={inputStyle} />
-          </div>
-          <button onClick={createOrder} style={{marginTop:12, background:'#10B981', color:'white', border:'none', padding:'10px 20px', borderRadius:10, fontWeight:'bold', cursor:'pointer', width:'100%'}}>
-            CREATE ORDER
-          </button>
-        </div>
-
-        {/* LIST */}
-        <div style={{background:'white', padding:20, borderRadius:16, marginTop:20, boxShadow:'0 4px 12px rgba(0,0,0,0.05)', border:'1px solid #E5E7EB'}}>
-          <h3 style={{margin:'0 0 12px', fontWeight:800}}>📦 All Orders ({orders.length})</h3>
-          {loading ? <p>Loading...</p> : orders.map(order => (
-            <div key={order.id} style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'12px 0', borderBottom:'1px solid #F3F4F6', flexWrap:'wrap', gap:10}}>
-              <div style={{flex:1, minWidth:200}}>
-                <div style={{fontWeight:'800'}}>{order.tracking_id} <span style={{fontSize:11, background:'#EFF6FF', color:'#1D4ED8', padding:'2px 8px', borderRadius:10}}>{order.status}</span></div>
-                <div style={{fontSize:12, color:'#6B7280'}}>{order.customer_name} • {order.customer_email}</div>
-                <a href={`/track?tracking=${order.tracking_id}`} target="_blank" style={{fontSize:11, color:'#10B981'}}>View Track Page →</a>
-              </div>
-              <div style={{display:'flex', gap:6, flexWrap:'wrap'}}>
-                {statuses.map(s => (
-                  <button key={s} onClick={()=>updateStatus(order.id, s)} 
-                    style={{
-                      padding:'5px 8px', fontSize:10, borderRadius:8, border:'1px solid #E5E7EB',
-                      background: order.status===s ? '#10B981' : 'white',
-                      color: order.status===s ? 'white' : '#374151',
-                      cursor:'pointer', fontWeight:'bold', textTransform:'uppercase'
-                    }}>{s.replace('_',' ')}</button>
-                ))}
-                <button onClick={()=>deleteOrder(order.id)} style={{padding:'5px 8px', fontSize:10, borderRadius:8, border:'1px solid #FCA5A5', background:'#FEF2F2', color:'#DC2626', cursor:'pointer'}}>X</button>
-              </div>
-            </div>
+        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+          {stats.map((s) => (
+            <button
+              key={s.k}
+              onClick={() => setFilter(s.k)}
+              className={`${card} text-left ${filter === s.k ? "border-teal-500 ring-2 ring-teal-200" : ""}`}
+            >
+              <p className="text-sm text-slate-500">{s.label}</p>
+              <p className="text-3xl font-bold text-[#0a2540]">{s.v}</p>
+            </button>
           ))}
         </div>
 
-        <div style={{marginTop:20, textAlign:'center'}}>
-          <button onClick={loadOrders} style={{padding:'8px 16px', borderRadius:8, border:'1px solid #E5E7EB', background:'white', cursor:'pointer'}}>🔄 Refresh</button>
+        <div className="mt-6 space-y-3">
+          {shown.length === 0 && <p className="text-slate-500">No bookings here.</p>}
+          {shown.map((b) => (
+            <Link key={b.id} href={`/admin/booking/${b.id}`} className={`${card} block transition hover:border-teal-400`}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold">{b.name}</p>
+                  <p className="text-sm text-slate-500">{b.email}</p>
+                  <p className="text-sm">{b.origin} → {b.destination}</p>
+                  {b.tracking_number && <p className="font-mono text-sm font-bold">{b.tracking_number}</p>}
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <PaymentBadge status={b.payment_status} admin />
+                  {b.payment_status === "paid" && (
+                    <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">{b.status}</span>
+                  )}
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
-
       </div>
-    </div>
+    </Shell>
   );
 }
-
-const inputStyle = {
-  padding:'10px 12px', borderRadius:10, border:'1px solid #E5E7EB', fontSize:14, outline:'none'
-} as const;
