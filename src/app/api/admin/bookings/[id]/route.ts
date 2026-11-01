@@ -5,6 +5,7 @@ import { getUser, isAdminUser } from "@/lib/serverAuth";
 import { sendEmail } from "@/lib/email";
 import { STATUSES } from "@/lib/config";
 
+const CUSTOMS = ["Not started", "In progress", "Cleared", "On hold"];
 const CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const makeCode = () =>
   "TROP-" + Array.from({ length: 6 }, () => CHARS[randomInt(CHARS.length)]).join("");
@@ -25,7 +26,14 @@ export async function GET(
     const { data: s } = await supabaseAdmin.storage.from("proofs").createSignedUrl(data.proof_path, 3600);
     proof_url = s?.signedUrl ?? null;
   }
-  return NextResponse.json({ ...data, proof_url });
+
+  const { data: events } = await supabaseAdmin
+    .from("tracking_events")
+    .select("id,note,location,created_at")
+    .eq("booking_id", id)
+    .order("created_at", { ascending: false });
+
+  return NextResponse.json({ ...data, proof_url, events: events ?? [] });
 }
 
 export async function PATCH(
@@ -82,6 +90,17 @@ export async function PATCH(
         "Tropical Shipping",
       ].join("\n"),
     };
+  } else if (body.action === "add_event") {
+    const note = String(body.note || "").trim();
+    if (!note) {
+      return NextResponse.json({ error: "Please type the update first" }, { status: 400 });
+    }
+    const loc = String(body.location || "").trim();
+    const { error: evErr } = await supabaseAdmin
+      .from("tracking_events")
+      .insert({ booking_id: id, note, location: loc || null });
+    if (evErr) return NextResponse.json({ error: evErr.message }, { status: 500 });
+    if (loc) upd.current_location = loc;
   } else {
     if (body.status !== undefined) {
       if (!(STATUSES as readonly string[]).includes(body.status)) {
@@ -93,7 +112,23 @@ export async function PATCH(
       upd.status = body.status;
     }
     if (body.amount !== undefined) upd.amount = Number(body.amount) || 0;
-    for (const k of ["container", "pickup_date", "pickup_notes"]) {
+    if (body.customs_fee !== undefined) upd.customs_fee = Number(body.customs_fee) || 0;
+    if (body.customs_status !== undefined) {
+      if (!CUSTOMS.includes(body.customs_status)) {
+        return NextResponse.json({ error: "Invalid customs status" }, { status: 400 });
+      }
+      upd.customs_status = body.customs_status;
+    }
+    for (const k of [
+      "container",
+      "pickup_date",
+      "pickup_notes",
+      "vessel_name",
+      "voyage_number",
+      "eta",
+      "current_location",
+      "customs_notes",
+    ]) {
       if (body[k] !== undefined) upd[k] = body[k];
     }
   }
