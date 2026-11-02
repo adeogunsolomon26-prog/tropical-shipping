@@ -4,7 +4,7 @@ import Shell from "@/components/Shell";
 import StatusTimeline from "@/components/StatusTimeline";
 import { btn, card, input } from "@/lib/ui";
 import type { Booking } from "@/lib/types";
-
+import TrackingPanel from "@/components/TrackingPanel";
 async function lookup(code: string): Promise<Booking | null> {
   const r = await fetch(`/api/track?code=${encodeURIComponent(code.trim())}`);
   return r.ok ? await r.json() : null;
@@ -62,7 +62,8 @@ export default function TrackPage() {
               {b.pickup_date && <p className="text-sm text-slate-500">Pickup: {b.pickup_date}</p>}
             </div>
             <StatusTimeline status={b.status} />
-          </div>
+            <TrackingPanel t={b} />
+          </div> 
         )}
       </div>
     </Shell>
