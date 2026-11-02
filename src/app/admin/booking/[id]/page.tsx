@@ -191,7 +191,9 @@ export default function AdminBookingPage() {
 
         {msg && <p className="text-sm text-slate-600">{msg}</p>}
       </div>
+  <div className="mx-auto max-w-2xl px-4 pb-10">
   <TrackingForm id={id} />
+</div>
 </Shell>
   );
 }
@@ -225,7 +227,8 @@ function TrackingForm({ id, initial }: { id: string; initial?: any }) {
       <h3 className="font-semibold">Tracking details</h3>
       <input className={box} placeholder="Vessel name" value={f.vessel_name} onChange={set("vessel_name")} />
       <input className={box} placeholder="Voyage number" value={f.voyage_number} onChange={set("voyage_number")} />
-      <input className={box} type="date" value={f.eta} onChange={set("eta")} />
+      <label className="block text-xs text-slate-500">ETA (estimated arrival)</label>
+<input className={`${box} block min-w-0 appearance-none bg-white`} type="date" value={f.eta} onChange={set("eta")} />
       <input className={box} placeholder="Current location / port" value={f.current_location} onChange={set("current_location")} />
       <input className={box} placeholder="Customs status" value={f.customs_status} onChange={set("customs_status")} />
       <input className={box} type="number" placeholder="Customs / documentation fees" value={f.customs_fees} onChange={set("customs_fees")} />
