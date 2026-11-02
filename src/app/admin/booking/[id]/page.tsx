@@ -167,10 +167,18 @@ export default function AdminBookingPage() {
             </div>
             <div>
               <label className={label}>Container</label>
-              <input className={input} value={f.container} onChange={(e) => setF({ ...f, container: e.target.value })} />
-            </div>
-            <div>
-              <label className={label}>Pickup date</label>
+            <select
+  className={input}
+  value={f.container}
+  onChange={(e) => setF({ ...f, container: e.target.value })}
+>
+  <option value="">Select…</option>
+  <option value="Container shipping">Container shipping</option>
+  <option value="RORO">RORO</option>
+</select>
+           </div>
+<div>
+<label className={label}>Pickup date</label>
               <input className={input} value={f.pickup_date} onChange={(e) => setF({ ...f, pickup_date: e.target.value })} placeholder="Example: Nov 12" />
             </div>
             <div>
