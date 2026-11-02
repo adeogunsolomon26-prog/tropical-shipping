@@ -5,7 +5,7 @@ export const BOOKING_FEE = 150;
 
 // Your contact details (shown in the footer)
 export const CONTACT = {
-  email: "info@yourdomain.com",
+  email: "tropicalshipping286@gmail.com",
   phone: "+1 (305) 000-0000",
   address: "Miami, Florida",
 };
@@ -28,12 +28,23 @@ export const DESTINATIONS = [
   "Antigua and Barbuda",
 ];
 
-export const STATUSES = ["Received", "Shipped", "Customs", "Delivered"] as const;
+export const STATUSES = [
+  "Received",
+  "Loaded",
+  "Shipped",
+  "Arrived at port",
+  "Customs",
+  "Out for delivery",
+  "Delivered",
+] as const;
 
 export const STATUS_HINT: Record<string, string> = {
   Received: "We have your shipment and your payment",
+  Loaded: "Your cargo has been loaded for departure",
   Shipped: "Your cargo is on its way from Miami",
+  "Arrived at port": "Your cargo has arrived at the destination port",
   Customs: "Clearing customs at the destination",
+  "Out for delivery": "Your cargo is on its way to you",
   Delivered: "Your shipment has been delivered",
 };
 
