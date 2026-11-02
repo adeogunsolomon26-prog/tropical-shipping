@@ -183,6 +183,47 @@ export default function AdminBookingPage() {
 
         {msg && <p className="text-sm text-slate-600">{msg}</p>}
       </div>
-    </Shell>
+  <TrackingForm id={id} />
+</Shell>
+  );
+}
+function TrackingForm({ id, initial }: { id: string; initial?: any }) {
+  const [f, setF] = useState({
+    vessel_name: initial?.vessel_name ?? "",
+    voyage_number: initial?.voyage_number ?? "",
+    eta: initial?.eta ?? "",
+    current_location: initial?.current_location ?? "",
+    customs_status: initial?.customs_status ?? "",
+    customs_fees: initial?.customs_fees ?? "",
+    note: "",
+  });
+  const [msg, setMsg] = useState("");
+  const set = (k: string) => (e: any) => setF({ ...f, [k]: e.target.value });
+  const box = "w-full rounded border border-gray-300 p-2 text-sm";
+
+  async function save() {
+    setMsg("Saving...");
+    const r = await authFetch(`/api/admin/bookings/${id}/tracking`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(f),
+    });
+    setMsg(r.ok ? "Saved ✓" : "Failed to save");
+    if (r.ok) setF({ ...f, note: "" });
+  }
+
+  return (
+    <div className="mt-6 rounded-lg border p-4 space-y-3">
+      <h3 className="font-semibold">Tracking details</h3>
+      <input className={box} placeholder="Vessel name" value={f.vessel_name} onChange={set("vessel_name")} />
+      <input className={box} placeholder="Voyage number" value={f.voyage_number} onChange={set("voyage_number")} />
+      <input className={box} type="date" value={f.eta} onChange={set("eta")} />
+      <input className={box} placeholder="Current location / port" value={f.current_location} onChange={set("current_location")} />
+      <input className={box} placeholder="Customs status" value={f.customs_status} onChange={set("customs_status")} />
+      <input className={box} type="number" placeholder="Customs / documentation fees" value={f.customs_fees} onChange={set("customs_fees")} />
+      <textarea className={box} placeholder="Update note (shows on the tracking page)" value={f.note} onChange={set("note")} />
+      <button onClick={save} className="rounded bg-blue-600 px-4 py-2 text-sm text-white">Save tracking update</button>
+      {msg && <p className="text-sm">{msg}</p>}
+    </div>
   );
 }
