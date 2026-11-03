@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { authFetch } from "@/lib/api";
 import { BRAND, CONTACT } from "@/lib/config";
-
+import Assistant from "@/components/Assistant";
 function Logo() {
   return (
     <svg viewBox="0 0 24 24" className="h-7 w-7 text-teal-400" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
