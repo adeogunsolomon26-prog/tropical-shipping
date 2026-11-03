@@ -4,7 +4,20 @@ export const BRAND = "Tropical Shipping";
 export const BOOKING_FEE = 150;
 // Price per destination in USD. Destinations not listed use BOOKING_FEE.
 export const PRICES: Record<string, number> = {
-  // "Guyana": 0,  // <- put your real price, then remove the //
+  // Based on public Miami quotes for one car or SUV by RoRo
+  "Jamaica": 1500,
+  "Barbados": 1700,
+  "Dominican Republic": 1500,
+  "Trinidad and Tobago": 1700,
+  "Guyana": 1800,
+  // No reliable public figure found: estimates, confirm with your carrier
+  "Bahamas": 1300,
+  "Haiti": 1500,
+  "Cayman Islands": 1700,
+  "Turks and Caicos": 1600,
+  "Saint Lucia": 1700,
+  "Grenada": 1800,
+  "Antigua and Barbuda": 1700,
 };
 
 export function priceFor(destination: string): number {
