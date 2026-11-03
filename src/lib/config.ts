@@ -2,7 +2,14 @@ export const BRAND = "Tropical Shipping";
 
 // Default amount in USD for each new booking (editable per booking in Admin)
 export const BOOKING_FEE = 150;
+// Price per destination in USD. Destinations not listed use BOOKING_FEE.
+export const PRICES: Record<string, number> = {
+  // "Guyana": 0,  // <- put your real price, then remove the //
+};
 
+export function priceFor(destination: string): number {
+  return PRICES[destination] ?? BOOKING_FEE;
+}
 // Your contact details (shown in the footer)
 export const CONTACT = {
   email: "tropicalshipping286@gmail.com",

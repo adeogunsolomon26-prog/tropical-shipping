@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getUser } from "@/lib/serverAuth";
-import { BOOKING_FEE, DESTINATIONS, ORIGINS } from "@/lib/config";
+import { priceFor, DESTINATIONS, ORIGINS } from "@/lib/config";
 
 export async function POST(req: Request) {
   const user = await getUser(req);
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
       destination,
       cargo_description: String(cargo_description).trim(),
       notes: notes ? String(notes).trim() : null,
-      amount: BOOKING_FEE,
+      amount: priceFor(destination),
       status: "Pending Payment",
       payment_status: "unpaid",
     })

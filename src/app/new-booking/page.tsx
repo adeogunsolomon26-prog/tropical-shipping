@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Shell from "@/components/Shell";
 import { useRequireAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/api";
-import { BOOKING_FEE, DESTINATIONS, ORIGINS } from "@/lib/config";
+import { priceFor, DESTINATIONS, ORIGINS } from "@/lib/config";
 import { btn, card, input, label } from "@/lib/ui";
 
 export default function NewBookingPage() {
@@ -66,7 +66,7 @@ export default function NewBookingPage() {
             <textarea className={input} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Pickup address, special instructions" />
           </div>
           <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
-            Booking amount: <b>${BOOKING_FEE}</b>. You will pay on the next step.
+            Booking amount: <b>${priceFor(destination)}</b>. You will pay on the next step.
           </p>
           {err && <p className="text-sm text-red-600">{err}</p>}
           <button className={`${btn} w-full`} disabled={busy}>{busy ? "Creating…" : "Continue to payment"}</button>
