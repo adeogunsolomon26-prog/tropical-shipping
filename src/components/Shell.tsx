@@ -109,6 +109,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           © {new Date().getFullYear()} {BRAND}. All rights reserved.
         </p>
       </footer>
+      <Assistant />
     </div>
   );
 }
