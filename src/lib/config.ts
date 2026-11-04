@@ -26,7 +26,7 @@ export function priceFor(destination: string): number {
 // Your contact details (shown in the footer)
 export const CONTACT = {
   email: "tropicalshipping286@gmail.com",
-  phone: "+1 (305) 000-0000",
+  phone: "",
   address: "Miami, Florida",
 };
 

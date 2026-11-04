@@ -96,7 +96,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           <div>
             <p className="font-semibold text-white">Contact</p>
             <p className="mt-1">{CONTACT.email}</p>
-            <p>{CONTACT.phone}</p>
+            {CONTACT.phone && <p>{CONTACT.phone}</p>}
             <p>{CONTACT.address}</p>
           </div>
           <div>
