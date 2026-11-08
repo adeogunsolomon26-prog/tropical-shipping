@@ -9,6 +9,7 @@ import { useRequireAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/api";
 import { btn, card } from "@/lib/ui";
 import type { Booking } from "@/lib/types";
+import DocumentsList from "@/components/DocumentsList";
 
 export default function BookingPage() {
   const { id } = useParams<{ id: string }>();
@@ -69,7 +70,7 @@ export default function BookingPage() {
             </button>
           </div>
         )}
-        
+      <DocumentsList id={String(b.id)} />                          
 <TrackingPanel code={b.tracking_number || undefined} />
         {ps === "unpaid" && (
           <div className={`${card} text-center`}>

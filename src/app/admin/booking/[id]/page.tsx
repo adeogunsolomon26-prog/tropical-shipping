@@ -9,6 +9,7 @@ import { authFetch } from "@/lib/api";
 import { PAYMENT_METHODS, STATUSES } from "@/lib/config";
 import { btn, btnDark, card, input, label } from "@/lib/ui";
 import type { Booking } from "@/lib/types";
+import DocumentsAdmin from "@/components/DocumentsAdmin";
 
 export default function AdminBookingPage() {
   const { id } = useParams<{ id: string }>();
@@ -193,6 +194,7 @@ export default function AdminBookingPage() {
       </div>
   <div className="mx-auto max-w-2xl px-4 pb-10">
   <TrackingForm id={id} />
+  <DocumentsAdmin id={id} />
 </div>
 </Shell>
   );
