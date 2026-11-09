@@ -25,6 +25,8 @@ export default function DocumentsAdmin({ id }: { id: string }) {
 
   async function upload() {
     if (!file) return setMsg("Choose a file first");
+    if (file.size > 4 * 1024 * 1024)
+  return setMsg("File too large (max 4 MB). Choose a smaller photo or a PDF.");
     setBusy(true);
     setMsg("Uploading...");
     const fd = new FormData();
