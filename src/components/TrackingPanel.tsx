@@ -30,7 +30,7 @@ export default function TrackingPanel({ t }: { t: any }) {
             {events.map((e) => (
               <li key={e.id} className="text-sm">
                 <div className="text-xs text-slate-500">
-                  {new Date(e.created_at).toLocaleString()}
+                  {new Date(e.created_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}
                   {e.location ? ` · ${e.location}` : ""}
                 </div>
                 {e.note && <div>{e.note}</div>}
